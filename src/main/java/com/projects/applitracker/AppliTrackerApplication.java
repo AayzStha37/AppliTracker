@@ -9,8 +9,6 @@ public class AppliTrackerApplication {
 
     public static void main(String[] args) {
         ApplicationContext applicationContext = SpringApplication.run(AppliTrackerApplication.class, args);
-        OrderService orderService = applicationContext.getBean(OrderService.class);
-        orderService.processOrder();
     }
 
 }
