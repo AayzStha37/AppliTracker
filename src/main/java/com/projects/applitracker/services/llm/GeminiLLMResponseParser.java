@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 @Service
-public class GeminiLLMResponseParserService implements LLMResponseParser {
+public class GeminiLLMResponseParser implements LLMResponseParser {
 
     ObjectMapper mapper = new ObjectMapper();
 

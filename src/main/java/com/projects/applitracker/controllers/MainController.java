@@ -3,7 +3,7 @@ package com.projects.applitracker.controllers;
 import com.projects.applitracker.constants.Constants;
 import com.projects.applitracker.dto.GeminiImagePostResponse;
 import com.projects.applitracker.services.encoder.ImageEncoder;
-import com.projects.applitracker.services.llm.LLMRequestGenerator;
+import com.projects.applitracker.services.llm.GeminiLLMService;
 import com.projects.applitracker.services.llm.LLMResponseParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,15 +19,15 @@ import java.util.List;
 @RestController
 @RequestMapping("app/v1")
 public class MainController {
-    ImageEncoder imageEncoder;
-    LLMRequestGenerator llmRequestGenerator;
-    LLMResponseParser LLMResponseParser;
+    private final ImageEncoder imageEncoder;
+    private final LLMResponseParser llmResponseParser;
+    private final GeminiLLMService geminiLLMService;
 
     @Autowired
-    public MainController(ImageEncoder imageEncoder, LLMRequestGenerator llmRequestGenerator, LLMResponseParser LLMResponseParser) {
+    public MainController(ImageEncoder imageEncoder, LLMResponseParser llmResponseParser, GeminiLLMService geminiLLMService) {
         this.imageEncoder = imageEncoder;
-        this.llmRequestGenerator = llmRequestGenerator;
-        this.LLMResponseParser = LLMResponseParser;
+        this.llmResponseParser = llmResponseParser;
+        this.geminiLLMService = geminiLLMService;
     }
 
     @PostMapping("/updateExcelSheet")
@@ -42,10 +42,10 @@ public class MainController {
         String encodedImage = imageEncoder.encodeImage(imageFile);
 
         //Send BS64 Encoded Image to Gemini LLM
-        String jsonResponse = llmRequestGenerator.sendTextExtractionRequest(encodedImage);
-        System.out.println(jsonResponse);
+        String jsonResponse = geminiLLMService.sendRequest(encodedImage);
+
         //Process response JSON
-        GeminiImagePostResponse response = LLMResponseParser.parseResponse(jsonResponse, GeminiImagePostResponse.class);
+        GeminiImagePostResponse response = llmResponseParser.parseResponse(jsonResponse, GeminiImagePostResponse.class);
 
         // Get company and role lists
         List<String> companies = response.getJobs().stream().map(GeminiImagePostResponse.Job::getCompany).toList();
