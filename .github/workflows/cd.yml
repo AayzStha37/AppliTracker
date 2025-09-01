@@ -1,0 +1,40 @@
+name: CD - Deploy to Google Cloud Run
+
+on:
+  workflow_run:
+    workflows: ["CI - Build, Test, and Push Docker Image"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud CLI
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy applitracker-service \
+            --image ghcr.io/${{ github.repository }}:${{ github.event.workflow_run.head_sha }} \
+            --region=us-central1 \
+            --memory=512Mi \
+            --service-account=${{ secrets.APP_SERVICE_ACCOUNT }} \
+            --set-env-vars="GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" \
+            --no-allow-unauthenticated
