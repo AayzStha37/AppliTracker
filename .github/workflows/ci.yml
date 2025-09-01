@@ -1,6 +1,5 @@
-name: CI - Build, Test, and Push Docker Image
+name: CI - Build, Test, and Push Docker Image to Google Artifact Registry
 
-# This workflow runs on pushes to the 'main' branch and on any pull request targeting 'main'
 on:
   push:
     branches: [ "main" ]
@@ -8,12 +7,11 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-push-image:
+  build-and-push-to-gcp:
     runs-on: ubuntu-latest
-    # Grant permissions for the GITHUB_TOKEN to write to the GitHub Package Registry
     permissions:
-      contents: read
-      packages: write
+      contents: 'read'
+      id-token: 'write' # Required for Workload Identity Federation
 
     steps:
       - name: Checkout repository
@@ -28,23 +26,23 @@ jobs:
       - name: Build and Test with Maven
         run: mvn -B clean install --file applitracker-function/pom.xml
 
-      - name: Log in to the GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: 'google-github-actions/auth@v2'
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
+      - name: Set up gcloud CLI
+        uses: 'google-github-actions/setup-gcloud@v2'
 
-      - name: Build and push Docker image
+      - name: Configure Docker to use the gcloud credential helper
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build and push Docker image to Artifact Registry
         uses: docker/build-push-action@v5
         with:
           context: ./applitracker-function
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          # This tag points to your Google Artifact Registry repository
+          tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/applitracker/applitracker-image:${{ github.sha }}
