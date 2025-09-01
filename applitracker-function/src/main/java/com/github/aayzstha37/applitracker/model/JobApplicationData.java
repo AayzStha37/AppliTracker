@@ -1,12 +1,10 @@
 package com.github.aayzstha37.applitracker.model;
 
-import java.util.Date;
-
 public class JobApplicationData {
     private String jobTitle;
     private String companyName;
-    private Date applicationDate;
-    private String applicationStatus;
+    private String applicationDate;
+    private String status;
 
     public String getJobTitle() {
         return jobTitle;
@@ -24,19 +22,19 @@ public class JobApplicationData {
         this.companyName = companyName;
     }
 
-    public String getApplicationStatus() {
-        return applicationStatus;
+    public String getStatus() {
+        return status;
     }
 
-    public void setApplicationStatus(String applicationStatus) {
-        this.applicationStatus = applicationStatus;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
-    public Date getApplicationDate() {
+    public String getApplicationDate() {
         return applicationDate;
     }
 
-    public void setApplicationDate(Date applicationDate) {
+    public void setApplicationDate(String applicationDate) {
         this.applicationDate = applicationDate;
     }
 
@@ -46,7 +44,7 @@ public class JobApplicationData {
                 "companyName='" + companyName + '\'' +
                 ", jobTitle='" + jobTitle + '\'' +
                 ", applicationDate='" + applicationDate + '\'' +
-                ", status='" + applicationStatus + '\'' +
+                ", status='" + status + '\'' +
                 '}';
     }
 }

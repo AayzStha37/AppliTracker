@@ -8,10 +8,10 @@ public enum ApplicationStatus {
     OFFER(5),
     INTERVIEW(4),
     ASSESSMENT(3),
-    APPLIED(2),
-    UPDATE(1),
-    UNKNOWN(0),
-    REJECTED(-1); // A terminal state
+    SCREENING(2),
+    APPLIED(1),
+    REJECTED(0), // Rejected is a terminal state, handled as a special case in SheetsService
+    UNKNOWN(-1); // A terminal state
 
     public final int priority;
 
