@@ -3,44 +3,58 @@ package com.github.aayzstha37.applitracker.service;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.*;
 import org.springframework.stereotype.Service;
+import com.google.api.services.gmail.model.Label;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class GmailService {
-
     private final Gmail gmail;
+    private static final String LABEL_NAME = "JobApplications";
 
-    public GmailService(Gmail gmail) {
-        this.gmail = gmail;
+    public GmailService(Gmail gmailApiClient) {
+        this.gmail = gmailApiClient;
     }
 
     public String getNewEmailContent(long historyId) throws IOException {
         String userId = "me";
-        ListHistoryResponse historyResponse = gmail.users().history().list(userId).setStartHistoryId(BigInteger.valueOf(historyId)).execute();
-        List<History> historyList = historyResponse.getHistory();
 
-        if (historyList == null || historyList.isEmpty()) return "";
+        // Find the ID of our "JobApplications" label.
+        String labelId = findLabelIdByName(LABEL_NAME);
+        if (labelId == null) {
+            System.err.println("Could not find the label ID for: " + LABEL_NAME);
+            return "";
+        }
 
-        Optional<String> messageIdOpt = historyList.stream()
-                .filter(history -> history.getMessagesAdded() != null)
-                .flatMap(history -> history.getMessagesAdded().stream())
-                .map(HistoryMessageAdded::getMessage)
-                .map(Message::getId)
-                .findFirst();
+        ListMessagesResponse listResponse = gmail.users().messages().list(userId)
+                .setLabelIds(Collections.singletonList(labelId))
+                .setMaxResults(1L) // We only care about the single most recent email.
+                .execute();
 
-        if (messageIdOpt.isEmpty()) return "";
+        List<Message> messages = listResponse.getMessages();
+        if (messages == null || messages.isEmpty()) {
+            System.out.println("Query for most recent message with label '" + LABEL_NAME + "' returned no results.");
+            return "";
+        }
 
-        String messageId = messageIdOpt.get();
+        // Get the full message content for the most recent message.
+        String messageId = messages.get(0).getId();
         Message message = gmail.users().messages().get(userId, messageId).setFormat("full").execute();
         MessagePart payload = message.getPayload();
+
+        // The rest of the parsing logic is the same.
         String subject = getHeader(payload.getHeaders(), "Subject");
         String body = getTextFromMessagePart(payload);
+
         return "Subject: " + subject + "\n\nBody:\n" + body;
+    }
+
+    private String findLabelIdByName(String labelName) throws IOException {
+        return gmail.users().labels().list("me").execute().getLabels().stream()
+                .filter(label -> label.getName().equalsIgnoreCase(labelName))
+                .map(Label::getId)
+                .findFirst().orElse(null);
     }
 
     private String getHeader(List<MessagePartHeader> headers, String name) {
@@ -51,7 +65,9 @@ public class GmailService {
     }
 
     private String getTextFromMessagePart(MessagePart messagePart) {
-        if ("text/plain".equals(messagePart.getMimeType()) && messagePart.getBody() != null && messagePart.getBody().getData() != null) {
+        if ("text/plain".equals(messagePart.getMimeType())
+                && messagePart.getBody() != null
+                && messagePart.getBody().getData() != null) {
             byte[] data = Base64.getUrlDecoder().decode(messagePart.getBody().getData());
             return new String(data, StandardCharsets.UTF_8);
         }

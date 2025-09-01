@@ -7,10 +7,8 @@ import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpTransport;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,17 +22,13 @@ public class GeminiService {
     private final GoogleCredentials credentials;
     private final Gson gson = new Gson();
 
-    // Injecting values from application.properties
     @Value("${gcp.project.id}")
     private String gcpProjectId;
 
-    @Value("${gcp.location}")
-    private String gcpLocation;
+    private static final String API_LOCATION = "global";
+    private static final String GEMINI_MODEL = "gemini-2.0-flash-001";;
 
-    @Value("${gemini.llm.model}")
-    private String geminiModel;
-
-    public GeminiService(HttpTransport httpTransport, GoogleCredentials credentials) {
+    public GeminiService(HttpTransport httpTransport, @Qualifier("userGoogleCredentials") GoogleCredentials credentials) {
         this.httpTransport = httpTransport;
         this.credentials = credentials;
     }
@@ -43,11 +37,10 @@ public class GeminiService {
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
         String finalPrompt = String.format(Constants.GEMINI_TEXT_EXTRACT_PROMPT, emailContent).replace("[TODAY'S_DATE]", today);
 
-        // The endpoint URL is now dynamically built using the injected properties
-        String endpointUrl = String.format("https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent",
-                gcpLocation, gcpProjectId, gcpLocation, geminiModel);
+        String endpointUrl = String.format("https://aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent",
+                gcpProjectId, API_LOCATION, GEMINI_MODEL);
 
-        String requestBody = String.format("{\"contents\":[{\"parts\":[{\"text\":\"%s\"}]}]}", gson.toJson(finalPrompt));
+        String requestBody = buildGeminiRequestBody(finalPrompt);;
 
         credentials.refreshIfExpired();
         String accessToken = credentials.getAccessToken().getTokenValue();
@@ -63,8 +56,8 @@ public class GeminiService {
         System.out.println("Gemini Raw REST Response: " + rawResponse);
 
         try {
+            //TODO convert this to POJO or separate function
             JsonObject jsonResponse = JsonParser.parseString(rawResponse).getAsJsonObject();
-            // This parsing logic is specific to the Gemini REST API response structure
             String geminiOutput = jsonResponse.getAsJsonArray("candidates")
                     .get(0).getAsJsonObject()
                     .getAsJsonObject("content")
@@ -80,5 +73,30 @@ public class GeminiService {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /* Builds the JSON payload for the Gemini API request in a structured and safe way.
+     * @param prompt The full text prompt to send to the model.
+     * @return A JSON string representing the request body.
+     */
+    private String buildGeminiRequestBody(String prompt) {
+        JsonObject textPart = new JsonObject();
+        textPart.addProperty("text", prompt);
+
+        JsonArray partsArray = new JsonArray();
+        partsArray.add(textPart);
+
+        JsonObject content = new JsonObject();
+        content.addProperty("role", "user");
+        content.add("parts", partsArray);
+
+        JsonArray contentsArray = new JsonArray();
+        contentsArray.add(content);
+
+        JsonObject requestBodyJson = new JsonObject();
+        requestBodyJson.add("contents", contentsArray);
+
+        System.out.println("Gemini Request Body: " + requestBodyJson.toString());
+        return gson.toJson(requestBodyJson);
     }
 }

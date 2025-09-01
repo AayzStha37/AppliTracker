@@ -1,10 +1,11 @@
 package com.github.aayzstha37.applitracker.service;
 
+import com.github.aayzstha37.applitracker.config.SecretsConfig;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.github.aayzstha37.applitracker.model.ApplicationStatus;
 import com.github.aayzstha37.applitracker.model.JobApplicationData;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -19,13 +20,13 @@ import java.util.stream.IntStream;
 @Service
 public class SheetsService {
     private final Sheets sheets;
-
-    @Value("${google.sheet.id}")
-    private String spreadsheetId;
-
+    private final String spreadsheetId;
     private static final String SHEET_NAME = "Sheet1"; // Assumes the default sheet name
 
-    public SheetsService(Sheets sheets) { this.sheets = sheets; }
+    public SheetsService(@Qualifier("sheetsApiClient") Sheets sheetsApiClient, SecretsConfig secretsConfig) {
+        this.sheets = sheetsApiClient;
+        this.spreadsheetId = secretsConfig.getSheetId(); // Get the sheet ID from the config
+    }
 
     public void updateSheet(JobApplicationData data) throws IOException {
         String uniqueKey = generateUniqueKey(data.getCompanyName(), data.getJobTitle());
@@ -51,9 +52,11 @@ public class SheetsService {
 
             if (newStatus.priority > currentStatus.priority || newStatus == ApplicationStatus.REJECTED) {
                 List<Object> updatedRowData = Arrays.asList(
-                        uniqueKey, data.getCompanyName(), data.getJobTitle(), data.getApplicationDate(),
-                        newStatus.name(), // Update the status
-                        timestamp // Update the timestamp
+                        uniqueKey,
+                        String.valueOf(data.getCompanyName()),
+                        String.valueOf(data.getJobTitle()),
+                        String.valueOf(data.getApplicationDate()),
+                        newStatus.name()
                 );
                 ValueRange body = new ValueRange().setValues(Collections.singletonList(updatedRowData));
                 sheets.spreadsheets().values().update(spreadsheetId, currentRowRange, body).setValueInputOption("USER_ENTERED").execute();
@@ -62,7 +65,13 @@ public class SheetsService {
             }
         } else {
             System.out.printf("No existing entry for key '%s'. Appending new row...\n", uniqueKey);
-            List<Object> newRowData = Arrays.asList(uniqueKey, data.getCompanyName(), data.getJobTitle(), data.getApplicationDate(), data.getApplicationStatus(), timestamp);
+            List<Object> newRowData = Arrays.asList(
+                    uniqueKey,
+                    String.valueOf(data.getCompanyName()),
+                    String.valueOf(data.getJobTitle()),
+                    String.valueOf(data.getApplicationDate()),
+                    String.valueOf(data.getApplicationStatus())
+            );
             ValueRange body = new ValueRange().setValues(Collections.singletonList(newRowData));
             sheets.spreadsheets().values().append(spreadsheetId, SHEET_NAME, body).setValueInputOption("USER_ENTERED").execute();
         }

@@ -1,13 +1,29 @@
 package com.github.aayzstha37.applitracker.model;
 
-public class PubSubMessage {
-    private String topicData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-    public String getTopicData() {
-        return topicData;
+// This annotation tells the JSON parser to ignore any extra fields it might receive
+// from Pub/Sub in the future, which makes your application more resilient to changes.
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class PubSubPushPayload {
+
+    private PubSubMessage message;
+
+    public PubSubPushPayload() {
     }
 
-    public void setTopicData(String topicData) {
-        this.topicData = topicData;
+    public PubSubMessage getMessage() {
+        return message;
+    }
+
+    public void setMessage(PubSubMessage message) {
+        this.message = message;
+    }
+
+    @Override
+    public String toString() {
+        return "PubSubPushPayload{" +
+                "message=" + message +
+                '}';
     }
 }
