@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.5</version>
+        <version>3.2.12</version>
         <relativePath/>
     </parent>
 
@@ -19,9 +19,9 @@
     <name>AppliTracker Parent</name>
 
     <properties>
-        <java.version>21</java.version>
-        <spring-cloud.version>2023.0.1</spring-cloud.version>
-        <spring-cloud-gcp.version>5.2.1</spring-cloud-gcp.version>
+        <java.version>17</java.version>
+        <spring-cloud.version>2023.0.3</spring-cloud.version>
+        <spring-cloud-gcp.version>5.4.0</spring-cloud-gcp.version>
     </properties>
 
     <modules>
