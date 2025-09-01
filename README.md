@@ -51,6 +51,36 @@ The system is built on an event-driven, serverless architecture that is both cos
 
 ---
 
+## 📁 Project Structure
+
+This project uses a **Maven multi-module structure** to separate the core application logic from one-time setup utilities.
+
+```
+.
+├── .github/workflows/          # CI/CD pipelines for GitHub Actions
+│   ├── ci.yml                  # Builds, tests, and pushes Docker image
+│   └── cd.yml                  # Deploys to Google Cloud Run
+│
+├── applitracker-function/      # The main Spring Boot application module
+│   ├── src/main/java
+│   │   └── .../applitracker/
+│   │       ├── config/         # Spring configuration (API clients, secrets)
+│   │       ├── controller/     # REST controllers for Pub/Sub push requests
+│   │       ├── model/          # Data Transfer Objects (DTOs) and Enums
+│   │       └── service/        # Core business logic for each component
+│   ├── Dockerfile              # Recipe to build the application container
+│   └── pom.xml                 # Maven build file for the application
+│
+├── setup-utils/                # Utilities for one-time manual setup
+│   └── src/main/java           # Contains StartGmailWatch.java
+│
+├── pom.xml                     # The parent Maven POM file
+└── README.md                   # You are here!
+```
+
+---
+
+
 ## 🚀 CI/CD Docker Pipeline
 
 This project is configured with a professional two-stage CI/CD pipeline using GitHub Actions:
