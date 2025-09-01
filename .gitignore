@@ -34,3 +34,6 @@ build/
 
 # Ignore client secrets
 **/client_secrets.json
+
+#ignore commands
+**/commands.txt
