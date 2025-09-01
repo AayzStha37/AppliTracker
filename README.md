@@ -31,7 +31,7 @@ The system is built on an event-driven, serverless architecture that is both cos
 5. The application logic fetches the full email, sends it to the **Gemini API** for parsing, and then writes the structured data to a **Google Sheet**, handling state updates and deduplication.  
 6. A **Cloud Scheduler** job triggers a separate endpoint every 6 days to automatically renew the Gmail `watch()` subscription.  
 
-🔗 [**View Mermaid (MMD) Diagram**](https://imgur.com/a/1sx78Gi)
+🔗 [**View Detailed Sequence/System Architectural Diagram**](https://imgur.com/a/1sx78Gi)
 
 ---
 
