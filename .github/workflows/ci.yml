@@ -44,5 +44,4 @@ jobs:
         with:
           context: ./applitracker-function
           push: true
-          # This tag points to your Google Artifact Registry repository
           tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/applitracker/applitracker-image:${{ github.sha }}
