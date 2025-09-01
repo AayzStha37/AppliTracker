@@ -2,7 +2,7 @@ name: CD - Deploy to Google Cloud Run
 
 on:
   workflow_run:
-    workflows: ["CI - Build, Test, and Push Docker Image"]
+    workflows: ["CI - Build, Test, and Push Docker Image to Google Artifact Registry"]
     types:
       - completed
     branches:
@@ -32,7 +32,7 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy applitracker-service \
-            --image ghcr.io/${{ github.repository }}:${{ github.event.workflow_run.head_sha }} \
+            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/applitracker/applitracker-image:${{ github.event.workflow_run.head_sha }} \
             --region=us-central1 \
             --memory=512Mi \
             --service-account=${{ secrets.APP_SERVICE_ACCOUNT }} \
